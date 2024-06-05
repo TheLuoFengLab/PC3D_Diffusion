@@ -12,6 +12,8 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("--ckpt", type=str)
 parser.add_argument("--device", type=str, default=None)
+parser.add_argument("--seed", type=int, default=1)
+
 
 parser.add_argument("--n", type=int)
 parser.add_argument("--length", type=float)
@@ -34,7 +36,7 @@ if __name__ == "__main__":
     else:
         ckpt = os.path.joint(settings.ckpt, "ckpt")
 
-    seed(1)
+    seed(settings.seed)
         
     model = Model([0.,0.,0.], [0.,0.,0.])
     model.to(device)
@@ -47,7 +49,12 @@ if __name__ == "__main__":
     c = torch.tensor([c], device=device)    # 1 x (3 or 4 or 5)
 
     p_t = torch.randn((1, settings.n, 3)).to(device) # 1 x n x 3
-    d_t = torch.randn((1, settings.n, 3)).to(device) # 1 x n x 2
+    u_t = torch.randn((1, settings.n, 3)).to(device) # 1 x n x 3
+    u_t[..., 2] = 0
+    u_t /= torch.linalg.norm(u_t, ord=2, dim=-1, keepdim=True)
+    omega_t = torch.rand((1, settings.n, 1)).to(device) * (np.pi/2)
+    d_t = omega_t*u_t
+
     x = model.sample(c, p_t, d_t)[0]
     ld = np.zeros((x.shape[0], 2))
     ld[:, 0] = settings.length/2
